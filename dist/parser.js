@@ -15,8 +15,13 @@ class Parser {
      */
     parse() {
         const location = this._currentToken.location;
+        const plotClause = this._consumePlotClause();
+        this._consumeToken("KEYWORD", "FROM");
+        const tableLoc = this._currentToken.location;
+        const table = this._consumeToken("IDENTIFIER").value;
         const query = {
-            plotClause: this._consumePlotClause(),
+            plotClause,
+            fromClause: { table, location: tableLoc },
             location
         };
         if (this._currentToken.value === "WHERE") {

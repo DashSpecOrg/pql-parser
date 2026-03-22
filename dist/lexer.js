@@ -139,6 +139,7 @@ class Lexer {
             const upperIdentifier = identifier.toUpperCase();
             switch (upperIdentifier) {
                 case "PLOT":
+                case "FROM":
                 case "AS":
                 case "WHERE":
                 case "GROUP":
