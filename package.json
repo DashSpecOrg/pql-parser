@@ -4,7 +4,7 @@
   "description": "Plot query language parser",
   "repository": {
     "type": "git",
-    "url": "https://github.com/joeyshi12/pql-parser.git"
+    "url": "https://github.com/DashSpecOrg/pql-parser.git"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
