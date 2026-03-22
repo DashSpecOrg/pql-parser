@@ -152,6 +152,7 @@ export class Lexer {
             
             switch (upperIdentifier) {
                 case "PLOT":
+                case "FROM":
                 case "AS":
                 case "WHERE":
                 case "GROUP":

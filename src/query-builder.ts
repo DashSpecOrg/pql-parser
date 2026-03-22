@@ -20,6 +20,7 @@ import {
  */
 export class QueryBuilder {
     private _plotClause?: PlotClause;
+    private _fromTable?: string;
     private _whereCondition?: WhereCondition;
     private _groupKey?: string;
     private _havingCondition?: HavingCondition;
@@ -120,6 +121,14 @@ export class QueryBuilder {
     }
 
     /**
+     * Sets the FROM table
+     */
+    from(table: string): this {
+        this._fromTable = table;
+        return this;
+    }
+
+    /**
      * Adds a GROUP BY clause
      */
     groupBy(column: string): this {
@@ -158,11 +167,14 @@ export class QueryBuilder {
         if (!this._plotClause) {
             throw new Error("Plot clause is required. Call bar(), line(), scatter(), etc. first.");
         }
+        if (!this._fromTable) {
+            throw new Error("FROM clause is required. Call from() first.");
+        }
 
         const query: PQLQuery = {
-            plotClause: this._plotClause
+            plotClause: this._plotClause,
+            fromClause: { table: this._fromTable }
         };
-
         if (this._whereCondition) {
             query.whereCondition = this._whereCondition;
         }

@@ -16,13 +16,14 @@ import {
     like,
     havingAgg
 } from '../src/query-builder';
-import { BarPlotCall, PointPlotCall, PiePlotCall, HistogramPlotCall, HeatmapPlotCall } from '../src/types';
+import { BarPlotCall, HistogramPlotCall, HeatmapPlotCall } from '../src/types';
 
 describe("query-builder.ts", () => {
     describe("QueryBuilder", () => {
         test("builds BAR plot", () => {
             const query = new QueryBuilder()
                 .bar("category", "value")
+                .from("t")
                 .build();
             
             expect(query.plotClause.plotFunction).toBe("BAR");
@@ -34,6 +35,7 @@ describe("query-builder.ts", () => {
         test("builds LINE plot", () => {
             const query = new QueryBuilder()
                 .line("x", "y")
+                .from("t")
                 .build();
             
             expect(query.plotClause.plotFunction).toBe("LINE");
@@ -42,6 +44,7 @@ describe("query-builder.ts", () => {
         test("builds SCATTER plot", () => {
             const query = new QueryBuilder()
                 .scatter("x", "y")
+                .from("t")
                 .build();
             
             expect(query.plotClause.plotFunction).toBe("SCATTER");
@@ -50,6 +53,7 @@ describe("query-builder.ts", () => {
         test("builds PIE plot", () => {
             const query = new QueryBuilder()
                 .pie("category", "value")
+                .from("t")
                 .build();
             
             expect(query.plotClause.plotFunction).toBe("PIE");
@@ -58,6 +62,7 @@ describe("query-builder.ts", () => {
         test("builds HISTOGRAM plot", () => {
             const query = new QueryBuilder()
                 .histogram("values", 10)
+                .from("t")
                 .build();
             
             expect(query.plotClause.plotFunction).toBe("HISTOGRAM");
@@ -68,6 +73,7 @@ describe("query-builder.ts", () => {
         test("builds AREA plot", () => {
             const query = new QueryBuilder()
                 .area("date", "value")
+                .from("t")
                 .build();
             
             expect(query.plotClause.plotFunction).toBe("AREA");
@@ -76,6 +82,7 @@ describe("query-builder.ts", () => {
         test("builds HEATMAP plot", () => {
             const query = new QueryBuilder()
                 .heatmap("x", "y", "intensity")
+                .from("t")
                 .build();
             
             expect(query.plotClause.plotFunction).toBe("HEATMAP");
@@ -83,9 +90,19 @@ describe("query-builder.ts", () => {
             expect(plot.valueColumn.column).toBe("intensity");
         });
 
+        test("builds query with FROM clause", () => {
+            const query = new QueryBuilder()
+                .bar("x", "y")
+                .from("sales")
+                .build();
+            
+            expect(query.fromClause.table).toBe("sales");
+        });
+
         test("builds query with WHERE clause", () => {
             const query = new QueryBuilder()
                 .bar("x", "y")
+                .from("t")
                 .where(gt("z", 0))
                 .build();
             
@@ -95,6 +112,7 @@ describe("query-builder.ts", () => {
         test("builds query with GROUP BY", () => {
             const query = new QueryBuilder()
                 .bar("category", agg("SUM", "value"))
+                .from("t")
                 .groupBy("category")
                 .build();
             
@@ -104,6 +122,7 @@ describe("query-builder.ts", () => {
         test("builds query with HAVING", () => {
             const query = new QueryBuilder()
                 .bar("category", agg("SUM", "value"))
+                .from("t")
                 .groupBy("category")
                 .having(havingAgg("SUM", "value", ">", 100))
                 .build();
@@ -114,6 +133,7 @@ describe("query-builder.ts", () => {
         test("builds query with ORDER BY", () => {
             const query = new QueryBuilder()
                 .line("x", "y")
+                .from("t")
                 .orderBy("x", "DESC")
                 .build();
             
@@ -123,6 +143,7 @@ describe("query-builder.ts", () => {
         test("builds query with LIMIT", () => {
             const query = new QueryBuilder()
                 .bar("x", "y")
+                .from("t")
                 .limit(10, 5)
                 .build();
             
@@ -130,12 +151,17 @@ describe("query-builder.ts", () => {
         });
 
         test("throws error when no plot clause", () => {
-            expect(() => new QueryBuilder().build()).toThrow();
+            expect(() => new QueryBuilder().from("t").build()).toThrow("Plot clause is required");
+        });
+
+        test("throws error when no FROM clause", () => {
+            expect(() => new QueryBuilder().bar("x", "y").build()).toThrow("FROM clause is required");
         });
 
         test("builds complex query", () => {
             const query = new QueryBuilder()
                 .bar("category", agg("SUM", "sales", "total_sales"))
+                .from("orders")
                 .where(and(
                     eq("region", "US"),
                     between("year", 2020, 2025)
@@ -147,6 +173,7 @@ describe("query-builder.ts", () => {
                 .build();
             
             expect(query.plotClause.plotFunction).toBe("BAR");
+            expect(query.fromClause.table).toBe("orders");
             expect(query.whereCondition).toBeDefined();
             expect(query.groupKey).toBe("category");
             expect(query.havingCondition).toBeDefined();

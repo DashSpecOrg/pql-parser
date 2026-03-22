@@ -42,8 +42,14 @@ export type Token = {
     location: SourceLocation;
 };
 
+export type FromClause = {
+    table: string;
+    location?: SourceLocation;
+};
+
 export type PQLQuery = {
     plotClause: PlotClause;
+    fromClause: FromClause;
     whereCondition?: WhereCondition;
     groupKey?: string;
     havingCondition?: HavingCondition;
@@ -213,6 +219,7 @@ export type LimitAndOffset = {
 export interface ASTVisitor<T> {
     visitQuery(query: PQLQuery): T;
     visitPlotClause(clause: PlotClause): T;
+    visitFromClause(from: FromClause): T;
     visitColumnMetadata(column: ColumnMetadata): T;
     visitWhereCondition(condition: WhereCondition): T;
     visitHavingCondition(condition: HavingCondition): T;

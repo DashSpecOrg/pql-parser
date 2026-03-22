@@ -40,6 +40,7 @@ export class PrettyPrinter {
         const parts: string[] = [];
 
         parts.push(this._printPlotClause(query.plotClause));
+        parts.push(this._keyword("FROM") + " " + this._escapeIdentifier(query.fromClause.table));
 
         if (query.whereCondition) {
             parts.push(this._keyword("WHERE") + " " + this._printWhereCondition(query.whereCondition));

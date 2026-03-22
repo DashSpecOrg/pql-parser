@@ -1,11 +1,10 @@
 import { BarPlotCall, PointPlotCall, PiePlotCall, HistogramPlotCall, HeatmapPlotCall } from '../src/types';
 import { Lexer } from '../src/lexer';
 import { Parser } from '../src/parser';
-import { PQLQuery } from '../src/types';
 
 describe("parser.ts", () => {
     test("basic plot statement", () => {
-        const input = "PLOT BAR(xcol, ycol)";
+        const input = "PLOT BAR(xcol, ycol) FROM t";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.plotClause.plotFunction).toBe("BAR");
         const plotClause = actual.plotClause as BarPlotCall;
@@ -13,8 +12,25 @@ describe("parser.ts", () => {
         expect(plotClause.valuesColumn.column).toBe("ycol");
     });
 
+    test("FROM clause is parsed", () => {
+        const input = "PLOT BAR(x, y) FROM sales";
+        const actual = new Parser(new Lexer(input)).parse();
+        expect(actual.fromClause.table).toBe("sales");
+    });
+
+    test("FROM clause with escaped identifier", () => {
+        const input = "PLOT BAR(x, y) FROM `my table`";
+        const actual = new Parser(new Lexer(input)).parse();
+        expect(actual.fromClause.table).toBe("my table");
+    });
+
+    test("missing FROM clause throws error", () => {
+        const input = "PLOT BAR(x, y) WHERE z > 0";
+        expect(() => new Parser(new Lexer(input)).parse()).toThrow();
+    });
+
     test("plot statement with named attributes", () => {
-        const input = "PLOT BAR(xcol AS x, ycol AS y)";
+        const input = "PLOT BAR(xcol AS x, ycol AS y) FROM t";
         const actual = new Parser(new Lexer(input)).parse();
         const plotClause = actual.plotClause as BarPlotCall;
         expect(plotClause.categoriesColumn.identifier).toBe("x");
@@ -22,7 +38,7 @@ describe("parser.ts", () => {
     });
 
     test("plot statement with escaped identifiers", () => {
-        const input = "PLOT BAR(` xcol `, `25`)";
+        const input = "PLOT BAR(` xcol `, `25`) FROM t";
         const actual = new Parser(new Lexer(input)).parse();
         const plotClause = actual.plotClause as BarPlotCall;
         expect(plotClause.categoriesColumn.column).toBe(" xcol ");
@@ -30,19 +46,19 @@ describe("parser.ts", () => {
     });
 
     test("plot statement with string where clause", () => {
-        const input = "PLOT BAR(xcol, ycol) WHERE zcol = 'on'";
+        const input = "PLOT BAR(xcol, ycol) FROM t WHERE zcol = 'on'";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({ eq: { key: "zcol", value: "on" } });
     });
 
     test("plot statement with greater than where clause", () => {
-        const input = "PLOT BAR(xcol, ycol) WHERE zcol > 0";
+        const input = "PLOT BAR(xcol, ycol) FROM t WHERE zcol > 0";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({ gt: { key: "zcol", value: 0 } });
     });
 
     test("plot statement with AND where clause", () => {
-        const input = "PLOT BAR(xcol, ycol) WHERE zcol > 0 AND zcol < 10";
+        const input = "PLOT BAR(xcol, ycol) FROM t WHERE zcol > 0 AND zcol < 10";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             and: [
@@ -53,7 +69,7 @@ describe("parser.ts", () => {
     });
 
     test("plot statement with OR where clause", () => {
-        const input = "PLOT BAR(xcol, ycol) WHERE zcol > 0 OR zcol < 10";
+        const input = "PLOT BAR(xcol, ycol) FROM t WHERE zcol > 0 OR zcol < 10";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             or: [
@@ -64,7 +80,7 @@ describe("parser.ts", () => {
     });
 
     test("plot statement with AND and OR conditions", () => {
-        const input = "PLOT BAR(xcol, ycol) WHERE zcol > 0 OR zcol < 10 AND xcol > 0";
+        const input = "PLOT BAR(xcol, ycol) FROM t WHERE zcol > 0 OR zcol < 10 AND xcol > 0";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             or: [
@@ -80,7 +96,7 @@ describe("parser.ts", () => {
     });
 
     test("plot statement with WHERE clause with parentheses", () => {
-        const input = "PLOT BAR(xcol, ycol) WHERE (zcol > 0 OR zcol < 10) AND xcol > 0";
+        const input = "PLOT BAR(xcol, ycol) FROM t WHERE (zcol > 0 OR zcol < 10) AND xcol > 0";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             and: [
@@ -96,7 +112,7 @@ describe("parser.ts", () => {
     });
 
     test("plot statement with groupby clause", () => {
-        const input = "PLOT BAR(xcol, AVG(ycol)) GROUP BY xcol";
+        const input = "PLOT BAR(xcol, AVG(ycol)) FROM t GROUP BY xcol";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.groupKey).toBe("xcol");
         const plotClause = actual.plotClause as BarPlotCall;
@@ -104,7 +120,7 @@ describe("parser.ts", () => {
     });
 
     test("plot statement with empty count aggregation", () => {
-        const input = "PLOT SCATTER(xcol, COUNT()) GROUP BY xcol";
+        const input = "PLOT SCATTER(xcol, COUNT()) FROM t GROUP BY xcol";
         const actual = new Parser(new Lexer(input)).parse();
         const plotClause = actual.plotClause as PointPlotCall;
         expect(plotClause.yColumn.aggregationFunction).toBe("COUNT");
@@ -112,15 +128,13 @@ describe("parser.ts", () => {
     });
 
     test("plot statement with limit and offset", () => {
-        const input = "PLOT SCATTER(xcol, COUNT()) GROUP BY xcol LIMIT 1 OFFSET 2";
+        const input = "PLOT SCATTER(xcol, COUNT()) FROM t GROUP BY xcol LIMIT 1 OFFSET 2";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.limitAndOffset).toEqual({ limit: 1, offset: 2 });
     });
 
-    // New tests for enhanced features
-
     test("PIE plot", () => {
-        const input = "PLOT PIE(category, value)";
+        const input = "PLOT PIE(category, value) FROM t";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.plotClause.plotFunction).toBe("PIE");
         const plotClause = actual.plotClause as PiePlotCall;
@@ -129,7 +143,7 @@ describe("parser.ts", () => {
     });
 
     test("HISTOGRAM plot", () => {
-        const input = "PLOT HISTOGRAM(values, 10)";
+        const input = "PLOT HISTOGRAM(values, 10) FROM t";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.plotClause.plotFunction).toBe("HISTOGRAM");
         const plotClause = actual.plotClause as HistogramPlotCall;
@@ -138,14 +152,14 @@ describe("parser.ts", () => {
     });
 
     test("HISTOGRAM plot without bins", () => {
-        const input = "PLOT HISTOGRAM(values)";
+        const input = "PLOT HISTOGRAM(values) FROM t";
         const actual = new Parser(new Lexer(input)).parse();
         const plotClause = actual.plotClause as HistogramPlotCall;
         expect(plotClause.bins).toBeUndefined();
     });
 
     test("AREA plot", () => {
-        const input = "PLOT AREA(date, value)";
+        const input = "PLOT AREA(date, value) FROM t";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.plotClause.plotFunction).toBe("AREA");
         const plotClause = actual.plotClause as PointPlotCall;
@@ -154,7 +168,7 @@ describe("parser.ts", () => {
     });
 
     test("HEATMAP plot", () => {
-        const input = "PLOT HEATMAP(x, y, intensity)";
+        const input = "PLOT HEATMAP(x, y, intensity) FROM t";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.plotClause.plotFunction).toBe("HEATMAP");
         const plotClause = actual.plotClause as HeatmapPlotCall;
@@ -164,7 +178,7 @@ describe("parser.ts", () => {
     });
 
     test("BETWEEN condition", () => {
-        const input = "PLOT BAR(x, y) WHERE value BETWEEN 10 AND 100";
+        const input = "PLOT BAR(x, y) FROM t WHERE value BETWEEN 10 AND 100";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             between: { key: "value", low: 10, high: 100 }
@@ -172,7 +186,7 @@ describe("parser.ts", () => {
     });
 
     test("IN condition", () => {
-        const input = "PLOT BAR(x, y) WHERE category IN ('A', 'B', 'C')";
+        const input = "PLOT BAR(x, y) FROM t WHERE category IN ('A', 'B', 'C')";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             in: { key: "category", values: ["A", "B", "C"] }
@@ -180,7 +194,7 @@ describe("parser.ts", () => {
     });
 
     test("IN condition with numbers", () => {
-        const input = "PLOT BAR(x, y) WHERE id IN (1, 2, 3)";
+        const input = "PLOT BAR(x, y) FROM t WHERE id IN (1, 2, 3)";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             in: { key: "id", values: [1, 2, 3] }
@@ -188,7 +202,7 @@ describe("parser.ts", () => {
     });
 
     test("LIKE condition", () => {
-        const input = "PLOT BAR(x, y) WHERE name LIKE 'test%'";
+        const input = "PLOT BAR(x, y) FROM t WHERE name LIKE 'test%'";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             like: { key: "name", pattern: "test%" }
@@ -196,7 +210,7 @@ describe("parser.ts", () => {
     });
 
     test("NOT condition", () => {
-        const input = "PLOT BAR(x, y) WHERE NOT value > 10";
+        const input = "PLOT BAR(x, y) FROM t WHERE NOT value > 10";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             not: { gt: { key: "value", value: 10 } }
@@ -204,25 +218,25 @@ describe("parser.ts", () => {
     });
 
     test("ORDER BY clause ascending", () => {
-        const input = "PLOT LINE(date, value) ORDER BY date ASC";
+        const input = "PLOT LINE(date, value) FROM t ORDER BY date ASC";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.orderBy).toEqual({ column: "date", direction: "ASC" });
     });
 
     test("ORDER BY clause descending", () => {
-        const input = "PLOT LINE(date, value) ORDER BY value DESC";
+        const input = "PLOT LINE(date, value) FROM t ORDER BY value DESC";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.orderBy).toEqual({ column: "value", direction: "DESC" });
     });
 
     test("ORDER BY clause default direction", () => {
-        const input = "PLOT LINE(date, value) ORDER BY date";
+        const input = "PLOT LINE(date, value) FROM t ORDER BY date";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.orderBy).toEqual({ column: "date", direction: "ASC" });
     });
 
     test("HAVING clause", () => {
-        const input = "PLOT BAR(category, SUM(sales)) GROUP BY category HAVING SUM(sales) > 1000";
+        const input = "PLOT BAR(category, SUM(sales)) FROM t GROUP BY category HAVING SUM(sales) > 1000";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.havingCondition).toEqual({
             aggregation: { function: "SUM", column: "sales" },
@@ -232,7 +246,7 @@ describe("parser.ts", () => {
     });
 
     test("HAVING clause with COUNT", () => {
-        const input = "PLOT BAR(category, COUNT()) GROUP BY category HAVING COUNT() >= 5";
+        const input = "PLOT BAR(category, COUNT()) FROM t GROUP BY category HAVING COUNT() >= 5";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.havingCondition).toEqual({
             aggregation: { function: "COUNT", column: undefined },
@@ -242,7 +256,7 @@ describe("parser.ts", () => {
     });
 
     test("HAVING clause with AND", () => {
-        const input = "PLOT BAR(cat, SUM(val)) GROUP BY cat HAVING SUM(val) > 100 AND AVG(val) < 50";
+        const input = "PLOT BAR(cat, SUM(val)) FROM t GROUP BY cat HAVING SUM(val) > 100 AND AVG(val) < 50";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.havingCondition).toEqual({
             and: [
@@ -253,7 +267,7 @@ describe("parser.ts", () => {
     });
 
     test("floating point comparison", () => {
-        const input = "PLOT BAR(x, y) WHERE price > 19.99";
+        const input = "PLOT BAR(x, y) FROM t WHERE price > 19.99";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             gt: { key: "price", value: 19.99 }
@@ -263,6 +277,7 @@ describe("parser.ts", () => {
     test("full query with all clauses", () => {
         const input = `
             PLOT BAR(category, SUM(sales))
+            FROM orders
             WHERE region = 'US' AND year BETWEEN 2020 AND 2025
             GROUP BY category
             HAVING SUM(sales) > 1000
@@ -272,6 +287,7 @@ describe("parser.ts", () => {
         const actual = new Parser(new Lexer(input)).parse();
         
         expect(actual.plotClause.plotFunction).toBe("BAR");
+        expect(actual.fromClause.table).toBe("orders");
         expect(actual.whereCondition).toBeDefined();
         expect(actual.groupKey).toBe("category");
         expect(actual.havingCondition).toBeDefined();
@@ -282,7 +298,7 @@ describe("parser.ts", () => {
     test("query with comments", () => {
         const input = `
             -- This is a comment
-            PLOT BAR(x, y) /* inline comment */ WHERE z > 0
+            PLOT BAR(x, y) FROM t /* inline comment */ WHERE z > 0
         `;
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.plotClause.plotFunction).toBe("BAR");
@@ -290,7 +306,7 @@ describe("parser.ts", () => {
     });
 
     test("<> not equal operator", () => {
-        const input = "PLOT BAR(x, y) WHERE status <> 'inactive'";
+        const input = "PLOT BAR(x, y) FROM t WHERE status <> 'inactive'";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.whereCondition).toEqual({
             neq: { key: "status", value: "inactive" }
@@ -298,7 +314,7 @@ describe("parser.ts", () => {
     });
 
     test("source location in AST", () => {
-        const input = "PLOT BAR(x, y)";
+        const input = "PLOT BAR(x, y) FROM t";
         const actual = new Parser(new Lexer(input)).parse();
         expect(actual.location).toBeDefined();
         expect(actual.location?.line).toBe(1);

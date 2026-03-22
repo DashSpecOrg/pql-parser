@@ -1,6 +1,7 @@
 import {
     PQLQuery,
     PlotClause,
+    FromClause,
     ColumnMetadata,
     WhereCondition,
     HavingCondition,
@@ -20,6 +21,7 @@ import {
 export abstract class BaseVisitor<T> implements ASTVisitor<T> {
     abstract visitQuery(query: PQLQuery): T;
     abstract visitPlotClause(clause: PlotClause): T;
+    abstract visitFromClause(from: FromClause): T;
     abstract visitColumnMetadata(column: ColumnMetadata): T;
     abstract visitWhereCondition(condition: WhereCondition): T;
     abstract visitHavingCondition(condition: HavingCondition): T;
@@ -36,7 +38,8 @@ export class ColumnCollector extends BaseVisitor<string[]> {
     visitQuery(query: PQLQuery): string[] {
         this._columns.clear();
         this.visitPlotClause(query.plotClause);
-        
+        this.visitFromClause(query.fromClause);
+
         if (query.whereCondition) {
             this.visitWhereCondition(query.whereCondition);
         }
@@ -140,6 +143,10 @@ export class ColumnCollector extends BaseVisitor<string[]> {
         return Array.from(this._columns);
     }
 
+    visitFromClause(_from: FromClause): string[] {
+        return Array.from(this._columns);
+    }
+
     visitLimitAndOffset(_limitOffset: LimitAndOffset): string[] {
         return Array.from(this._columns);
     }
@@ -198,6 +205,10 @@ export class AggregationChecker extends BaseVisitor<boolean> {
     }
 
     visitWhereCondition(_condition: WhereCondition): boolean {
+        return this._hasAggregation;
+    }
+
+    visitFromClause(_from: FromClause): boolean {
         return this._hasAggregation;
     }
 

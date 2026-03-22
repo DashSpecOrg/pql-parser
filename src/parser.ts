@@ -37,8 +37,15 @@ export class Parser {
      */
     public parse(): PQLQuery {
         const location = this._currentToken.location;
+        const plotClause = this._consumePlotClause();
+
+        this._consumeToken("KEYWORD", "FROM");
+        const tableLoc = this._currentToken.location;
+        const table = this._consumeToken("IDENTIFIER").value;
+
         const query: PQLQuery = {
-            plotClause: this._consumePlotClause(),
+            plotClause,
+            fromClause: { table, location: tableLoc },
             location
         };
 
