@@ -9,7 +9,6 @@ export declare class Parser {
     constructor(lexer: Lexer);
     /**
      * Parses the PQL query into a syntax tree
-     * @returns AST of the PQL query
      */
     parse(): PQLQuery;
     private _consumePlotClause;
@@ -18,7 +17,12 @@ export declare class Parser {
     private _consumeCondition;
     private _consumeConditionGroup;
     private _consumeComparison;
+    private _consumeHavingCondition;
+    private _consumeHavingConditionGroup;
+    private _consumeHavingComparison;
+    private _consumeOrderByClause;
     private _consumeLimitAndOffsetClause;
     private _consumeToken;
     private _consumeComparisonValue;
+    private _getTokenSuggestion;
 }

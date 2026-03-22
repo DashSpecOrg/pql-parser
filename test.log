@@ -1,0 +1,16 @@
+
+> pql-parser@0.4.1 test
+> jest
+
+PASS test/visitor.test.ts
+PASS test/query-builder.test.ts
+PASS test/pretty-printer.test.ts
+PASS test/lexer.test.ts
+PASS test/parser.test.ts
+PASS test/validator.test.ts
+
+Test Suites: 6 passed, 6 total
+Tests:       126 passed, 126 total
+Snapshots:   0 total
+Time:        0.959 s, estimated 1 s
+Ran all test suites.

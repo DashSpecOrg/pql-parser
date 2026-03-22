@@ -1,33 +1,51 @@
-import { Token } from "./types";
+import { SourceLocation, Token } from "./types";
 /**
  * Lexer for tokenizing PQL queries
  */
 export declare class Lexer {
     private readonly _input;
     private _position;
+    private _line;
+    private _column;
     constructor(_input: string);
     /**
      * Retrieves the current position of the lexer
-     * @returns The current position of the lexer in the input string
      */
     get currentPosition(): number;
     /**
-     * Retrieves the current char of the lexer
-     * @returns The current char of the lexer in the input string
+     * Retrieves the current line number
      */
-    get currentChar(): string;
+    get currentLine(): number;
     /**
-     * Peeks at the next character in the input string without advancing the lexer position
-     * @returns The next character in the input string, or null if at the end of the input
+     * Retrieves the current column number
+     */
+    get currentColumn(): number;
+    /**
+     * Retrieves the current char of the lexer
+     */
+    get currentChar(): string | undefined;
+    /**
+     * Gets the current source location
+     */
+    getLocation(): SourceLocation;
+    /**
+     * Peeks at the next character without advancing
      */
     peek(): string | null;
     /**
+     * Peeks at a character at a specific offset
+     */
+    peekAt(offset: number): string | null;
+    /**
      * Retrieves the next token from the input string
-     * @returns The next token found in the input string
      */
     nextToken(): Token;
-    private _skipWhitespace;
+    private _advance;
+    private _skipWhitespaceAndComments;
+    private _skipLineComment;
+    private _skipBlockComment;
     private _readAlphanumeric;
     private _readTo;
     private _readNumber;
+    private _getSuggestion;
 }

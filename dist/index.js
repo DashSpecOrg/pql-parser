@@ -18,3 +18,7 @@ __exportStar(require("./exceptions"), exports);
 __exportStar(require("./types"), exports);
 __exportStar(require("./lexer"), exports);
 __exportStar(require("./parser"), exports);
+__exportStar(require("./validator"), exports);
+__exportStar(require("./visitor"), exports);
+__exportStar(require("./pretty-printer"), exports);
+__exportStar(require("./query-builder"), exports);
